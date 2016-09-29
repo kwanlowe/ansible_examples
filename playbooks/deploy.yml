@@ -1,0 +1,6 @@
+  - name: "Task 1"
+    include: "taskset1.yml variable_host={{ target | default('sandbox') }}"
+  - name: "Task 2"
+    include: "taskset2.yml variable_host={{ target | default('sandbox') }}"
+
+    

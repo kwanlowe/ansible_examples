@@ -1,0 +1,28 @@
+- hosts: "{{ variable_host | default('sandbox')}}"
+  become: true
+  become_user: root
+
+  vars:
+    pvScanCmd: "PVS_OUT=$(sudo pvs -o pv_name --noheadings|sed -e 's:^[\ ]*::' -e 's:[1-9].$::'|sort -u)"
+    scsiScanCmd: "SCSI_OUT=$(lsscsi |awk '/sd/{print $NF}'|sort)"
+    compareCmd: 'comm -3 <(echo "$PVS_OUT") <(echo "$SCSI_OUT")'
+ 
+  tasks:
+    - name: "Find free disk"
+      shell: "{{ pvScanCmd }}; {{ scsiScanCmd }}; {{ compareCmd }}" 
+      args:
+        executable: /bin/bash
+      register: freeDiskDev
+
+    - shell: "echo {{ freeDiskDev.stdout }} > /tmp/kll1"
+
+    - name: "Create PV on {{  freeDiskDev.stdout }}"
+      shell:  if [ ! -b {{ freeDiskDev.stdout }}1 ]; then (echo -e "n\np\n1\n\n\nt\n8e\nw\n\n" | /sbin/fdisk {{ freeDiskDev.stdout }} ); fi
+      args:
+        executable: /bin/bash
+      when: freeDiskDev.stdout is defined
+
+    - debug: msg="{{ freeDiskDev.stdout }}" 
+
+
+

@@ -1,0 +1,11 @@
+List of pvs device
+	sudo pvs -o pv_name --noheadings|sed -e 's:^[\ ]*::' -e 's:[1-9].$::'|sort|uniq|tee pvs.out
+List of scsi devices
+	lsscsi |awk '/sd/{print $NF}'|sort|tee lsscsi.out
+Difference between these
+	comm -3 pvs.out lsscsi.out |sed -e 's:^[\t\ ]*::'
+
+
+To be really safe, should check if partition already exists then cowardly refuse to proceed if so.
+
+

@@ -1,0 +1,8 @@
+- hosts: sandbox
+  become: true
+  become_user: root
+  tasks:
+    - name: "Create /dev/sdb1"
+      shell:  if [ ! -b /dev/sdb1 ]; then (echo -e "n\np\n1\n\n\nt\n8e\nw\n\n"  /sbin/fdisk /dev/sdb ); fi
+      args:
+        executable: /bin/bash
