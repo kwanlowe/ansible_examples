@@ -15,7 +15,13 @@
       register: freeDisk
 
     - name: "Create PV on {{  freeDisk.stdout }}"
-      shell: freeDevs="{{ freeDisk.stdout }}";  for disk in $freeDevs; do if [ ! -b  "${disk}1" ]; then (echo -e "n\np\n1\n\n\nt\n8e\nw\n\n" | /sbin/fdisk $disk ); fi; done
+      shell: >
+        freeDevs="{{ freeDisk.stdout }}";  
+        for disk in $freeDevs; do i
+          if [ ! -b  "${disk}1" ]; 
+            then (echo -e "n\np\n1\n\n\nt\n8e\nw\n\n" | /sbin/fdisk $disk ); 
+          fi; 
+        done
       args:
         executable: /bin/bash
       when: freeDisk.stdout is defined
