@@ -9,20 +9,17 @@
  
   tasks:
     - name: "Find free disk"
-      shell: "{{ pvScanCmd }}; {{ scsiScanCmd }}; {{ compareCmd }}" 
+      shell: "{{ pvScanCmd }}; {{ scsiScanCmd }}; {{ compareCmd }}|tr '\n\t' ' '" 
       args:
         executable: /bin/bash
-      register: freeDiskDev
+      register: freeDisk
 
-    - shell: "echo {{ freeDiskDev.stdout }} > /tmp/kll1"
-
-    - name: "Create PV on {{  freeDiskDev.stdout }}"
-      shell:  if [ ! -b {{ freeDiskDev.stdout }}1 ]; then (echo -e "n\np\n1\n\n\nt\n8e\nw\n\n" | /sbin/fdisk {{ freeDiskDev.stdout }} ); fi
+    - name: "Create PV on {{  freeDisk.stdout }}"
+      shell: freeDevs="{{ freeDisk.stdout }}";  for disk in $freeDevs; do if [ ! -b  "${disk}1" ]; then (echo -e "n\np\n1\n\n\nt\n8e\nw\n\n" | /sbin/fdisk $disk ); fi; done
       args:
         executable: /bin/bash
-      when: freeDiskDev.stdout is defined
+      when: freeDisk.stdout is defined
 
-    - debug: msg="{{ freeDiskDev.stdout }}" 
 
 
 
