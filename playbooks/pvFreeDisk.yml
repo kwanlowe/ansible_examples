@@ -1,3 +1,5 @@
+# Create PVs on all "free" disks on a host
+
 - hosts: "{{ variable_host | default('sandbox')}}"
   become: true
   become_user: root
@@ -17,9 +19,10 @@
     - name: "Create PV on {{  freeDisk.stdout }}"
       shell: >
         freeDevs="{{ freeDisk.stdout }}";  
-        for disk in $freeDevs; do i
+        for disk in $freeDevs; do 
           if [ ! -b  "${disk}1" ]; 
             then (echo -e "n\np\n1\n\n\nt\n8e\nw\n\n" | /sbin/fdisk $disk ); 
+            /sbin/pvcreate "${disk}1";
           fi; 
         done
       args:
