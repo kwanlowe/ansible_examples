@@ -1,13 +1,18 @@
 # Create PVs on all "free" disks on a host
+# Extend a target VG with the new PVs
+# Caveat: This playbook assumes the PVs are the first
+#    and only partition on the disk. 
 
-- hosts: "{{ variable_host | default('sandbox')}}"
+- hosts: "{{ variable_host | default('klltest')}}"
   become: true
   become_user: root
 
   vars:
+    targetVG: "{{ target_vg | default('appls_vg')}}"
     pvScanCmd: "PVS_OUT=$(pvs -o pv_name --noheadings|sed -e 's:^[\ ]*::' -e 's:[1-9].$::'|sort -u)"
     scsiScanCmd: "SCSI_OUT=$(lsscsi |awk '/sd/{print $NF}'|sort)"
     compareCmd: 'comm -3 <(echo "$PVS_OUT") <(echo "$SCSI_OUT")'
+    cleanWhiteSpace: "sed -e 's:^[\ \t]*::' -e 's:[\ \t].*$::'"
  
   tasks:
     - name: "Find free disk"
@@ -16,7 +21,7 @@
         executable: /bin/bash
       register: freeDisk
 
-    - name: "Create PV on {{  freeDisk.stdout }}"
+    - name: "Create PV on {{ freeDisk.stdout }}"
       shell: >
         freeDevs="{{ freeDisk.stdout }}";  
         for disk in $freeDevs; do 
@@ -30,5 +35,28 @@
       when: freeDisk.stdout is defined
 
 
+    - name: "Add new PVs to volume group"
+    # Given a list of freeDisks, clean up the output and append the partition number to each disk.
+    # This will turn a list:
+    #   /dev/sdc
+    #   /dev/sdd
+    # Into:
+    #   /dev/sdc1,/dev/sdc2
+      shell: "echo \"{{ freeDisk.stdout }}\" |{{ cleanWhiteSpace }}| sed -e 's/$/1/' | xargs | sed -e 's/ /,/g' " 
+      args:
+        executable: /bin/bash
+      register: freePVs
+      when: freeDisk.stdout is defined
+
+    - name: "Get existing PVs in VG {{ targetVG }}"
+      shell: " vgs --separator , --noheadings -o pv_name {{ targetVG }} |{{ cleanWhiteSpace }} | xargs | sed -e 's/ /,/g' " 
+      args:
+        executable: /bin/bash
+      register: currentPVs
+      when: freeDisk.stdout is defined
+
+    - name: "Extend {{ targetVG }}"
+      lvg:  "vg={{ targetVG }}  pvs={{ currentPVs.stdout }},{{ freePVs.stdout }}" 
+      when: freeDisk.stdout is defined
 
 
