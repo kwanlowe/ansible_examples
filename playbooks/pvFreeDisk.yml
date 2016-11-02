@@ -24,7 +24,7 @@
     targetVG: "{{ target_vg | default('appls_vg')}}"
     pvScanCmd: "PVS_OUT=$(pvs -o pv_name --noheadings|sed -e 's:^[\ ]*::' -e 's:[1-9].$::'|sort -u)"
     scsiScanCmd: "SCSI_OUT=$(lsscsi |awk '/sd/{print $NF}'|sort)"
-    vdxScanCmd: "SCSI_OUT=$(lsblk  -l -p -d -n -o NAME)"
+    vdxScanCmd: "SCSI_OUT=$(lsblk  --list --paths --nodeps --noheadings --output NAME)"
     compareCmd: 'comm -3 <(echo "$PVS_OUT") <(echo "$SCSI_OUT")'
     cleanWhiteSpace: "sed -e 's:^[\ \t]*::' -e 's:[\ \t].*$::'"
  
