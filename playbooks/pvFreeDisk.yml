@@ -11,7 +11,12 @@
 # vars definitions:
 # targetVG - passed from extra_vars at runtime (or not)
 # pvScanCmd - list the existing PVs on the system and return the disks associated with them
-# scsiScamCmd - list the SCSI disks on a sytem
+
+# Depending on what sort of virtualization you use, one of the following will work.
+# TODO: Need a cleaner way of handling different capabilities. 
+# scsiScanCmd - list the SCSI disks on a system
+# vdScanCmd - list the /dev/vdx disks on a system
+
 # compareCmd - Fairly dumb diff of existing PV disks and SCSI disks. If it's in this list it
 #   should be a "free" disk. No telling what happens on raw disks (e.g., Oracle ASM disks, etc.).
   
@@ -19,12 +24,14 @@
     targetVG: "{{ target_vg | default('appls_vg')}}"
     pvScanCmd: "PVS_OUT=$(pvs -o pv_name --noheadings|sed -e 's:^[\ ]*::' -e 's:[1-9].$::'|sort -u)"
     scsiScanCmd: "SCSI_OUT=$(lsscsi |awk '/sd/{print $NF}'|sort)"
+    vdxScanCmd: "SCSI_OUT=$(lsblk  -l -p -d -n -o NAME)"
     compareCmd: 'comm -3 <(echo "$PVS_OUT") <(echo "$SCSI_OUT")'
     cleanWhiteSpace: "sed -e 's:^[\ \t]*::' -e 's:[\ \t].*$::'"
  
   tasks:
     - name: "Find free disk"
-      shell: "{{ pvScanCmd }}; {{ scsiScanCmd }}; {{ compareCmd }}|tr '\n\t' ' '" 
+#      shell: "{{ pvScanCmd }}; {{ scsiScanCmd }}; {{ compareCmd }}|tr '\n\t' ' '" 
+      shell: "{{ pvScanCmd }}; {{ vdxScanCmd }}; {{ compareCmd }}|tr '\n\t' ' '" 
       args:
         executable: /bin/bash
       register: freeDisk
